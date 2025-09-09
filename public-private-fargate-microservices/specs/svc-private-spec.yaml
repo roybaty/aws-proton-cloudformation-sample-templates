@@ -5,7 +5,7 @@ pipeline:
 
 instances:
   - name: "backend-dev"
-    environment: "Beta"
+    environment: "Stage"
     spec:
       desired_count: 2
       port: 80
