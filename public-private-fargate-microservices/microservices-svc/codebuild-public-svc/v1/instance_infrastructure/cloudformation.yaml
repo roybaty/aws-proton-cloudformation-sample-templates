@@ -477,6 +477,7 @@ Resources:
                 Action: codebuild:StartBuild
                 Resource: !GetAtt InstanceDeployProject.Arn
 
+# Outputs
 Outputs:
   ServiceEndpoint:
     Description: The URL to access the service
