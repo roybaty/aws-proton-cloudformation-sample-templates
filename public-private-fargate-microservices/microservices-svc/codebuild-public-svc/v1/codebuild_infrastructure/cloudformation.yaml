@@ -1,0 +1,140 @@
+Resources:
+  # Role used by CodeBuild to call Proton/ECR/Logs
+  InstanceDeployProjectRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: codebuild.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: DeployPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ecr:DescribeImages
+                  - sts:GetCallerIdentity
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - proton:GetService
+                  - proton:GetServiceInstance
+                  - proton:UpdateServiceInstance
+                Resource: "*"
+
+  InstanceDeployProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub "proton-${AWS::StackName}-deploy"
+      ServiceRole: !GetAtt InstanceDeployProjectRole.Arn
+      Artifacts: { Type: NO_ARTIFACTS }
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:7.0
+        PrivilegedMode: false
+        EnvironmentVariables:
+          # These act as defaults; EventBridge will override them dynamically.
+          - Name: PROTON_SERVICE
+            Type: PLAINTEXT
+            Value: "{{ service.name }}"
+          - Name: PROTON_INSTANCE
+            Type: PLAINTEXT
+            Value: "{{ service_instance.name }}"
+          - Name: ECR_REPO
+            Type: PLAINTEXT
+            Value: "{{ service_instance.inputs.ecr_repository | default('') }}"
+          - Name: ECR_TAG
+            Type: PLAINTEXT
+            Value: "{{ service_instance.inputs.ecr_tag | default('latest') }}"
+          - Name: REGION
+            Type: PLAINTEXT
+            Value: "{{ service_instance.inputs.region | default(environment.region) }}"
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: !Sub |
+          version: 0.2
+          phases:
+            install:
+              commands:
+                - set -euo pipefail
+                - echo "Installing jq and yq v4..."
+                - yum -y install jq
+                - curl -L https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /usr/local/bin/yq
+                - chmod +x /usr/local/bin/yq
+            build:
+              commands:
+                - set -euo pipefail
+                - : "${ECR_TAG:=latest}"  # fallback if event didn't set a tag
+                - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+                - echo "Using repo=$ECR_REPO tag=$ECR_TAG region=$REGION"
+                - DIGEST=$(aws ecr describe-images --repository-name "$ECR_REPO" --image-ids imageTag="$ECR_TAG" --query 'imageDetails[0].imageDigest' --output text --region "$REGION")
+                - test "$DIGEST" != "None" || { echo "Tag '$ECR_TAG' not found in ECR repo '$ECR_REPO'"; exit 1; }
+                - IMAGE_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$ECR_REPO@$DIGEST"
+                - echo "Deploying $IMAGE_URI to service=$PROTON_SERVICE instance=$PROTON_INSTANCE"
+                - aws proton get-service --name "$PROTON_SERVICE" --region "$REGION" | jq -r .service.spec > service.yaml
+                - yq -i '(.spec.instances[] | select(.name == env(PROTON_INSTANCE)) | .spec.image) = env(IMAGE_URI)' service.yaml
+                - aws proton update-service-instance \
+                    --deployment-type CURRENT_VERSION \
+                    --name "$PROTON_INSTANCE" \
+                    --service-name "$PROTON_SERVICE" \
+                    --spec file://service.yaml \
+                    --region "$REGION"
+                - aws proton wait service-instance-deployed --name "$PROTON_INSTANCE" --service-name "$PROTON_SERVICE" --region "$REGION"
+
+  # EventBridge rule: fire CodeBuild on ANY successful ECR push (any repo/tag)
+  EcrPushRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: !Sub "Trigger deploy for ${AWS::StackName} on ANY ECR push"
+      EventPattern:
+        source: ["aws.ecr"]
+        detail-type: ["ECR Image Action"]
+        detail:
+          action-type: ["PUSH"]
+          result: ["SUCCESS"]
+          # No repository-name / image-tag filter -> catch all
+      Targets:
+        - Id: StartDeployBuild
+          Arn: !GetAtt InstanceDeployProject.Arn
+          RoleArn: !GetAtt EventsInvokeCodeBuildRole.Arn
+          InputTransformer:
+            InputPathsMap:
+              repo: "$.detail.repository-name"
+              tag: "$.detail.image-tag"
+            InputTemplate: |
+              {
+                "environmentVariablesOverride": [
+                  { "name": "ECR_REPO", "type": "PLAINTEXT", "value": <repo> },
+                  { "name": "ECR_TAG",  "type": "PLAINTEXT", "value": <tag> }
+                ]
+              }
+
+  # Role that Events uses to start CodeBuild
+  EventsInvokeCodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: events.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StartBuild
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: codebuild:StartBuild
+                Resource: !GetAtt InstanceDeployProject.Arn
