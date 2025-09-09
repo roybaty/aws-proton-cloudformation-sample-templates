@@ -413,7 +413,7 @@ Resources:
             build:
               commands:
                 - set -euo pipefail
-                - : "${ECR_TAG:=latest}"  # fallback if event didn't set a tag
+                - ECR_TAG="${ECR_TAG:-latest}"
                 - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
                 - echo "Using repo=$ECR_REPO tag=$ECR_TAG region=$REGION"
                 - DIGEST=$(aws ecr describe-images --repository-name "$ECR_REPO" --image-ids imageTag="$ECR_TAG" --query 'imageDetails[0].imageDigest' --output text --region "$REGION")
