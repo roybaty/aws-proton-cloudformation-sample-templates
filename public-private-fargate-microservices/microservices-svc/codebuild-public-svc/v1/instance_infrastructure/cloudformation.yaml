@@ -395,9 +395,6 @@ Resources:
           - Name: ECR_TAG
             Type: PLAINTEXT
             Value: "{{ service_instance.inputs.ecr_tag | default('latest') }}"
-          - Name: REGION
-            Type: PLAINTEXT
-            Value: "{{ service_instance.inputs.region | default(environment.region) }}"
       Source:
         Type: NO_SOURCE
         BuildSpec: |
@@ -415,20 +412,20 @@ Resources:
                 - set -euo pipefail
                 - ECR_TAG="${ECR_TAG:-latest}"
                 - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-                - echo "Using repo=$ECR_REPO tag=$ECR_TAG region=$REGION"
-                - DIGEST=$(aws ecr describe-images --repository-name "$ECR_REPO" --image-ids imageTag="$ECR_TAG" --query 'imageDetails[0].imageDigest' --output text --region "$REGION")
+                - echo "Using repo=$ECR_REPO tag=$ECR_TAG region=$AWS_DEFUALT_REGION"
+                - DIGEST=$(aws ecr describe-images --repository-name "$ECR_REPO" --image-ids imageTag="$ECR_TAG" --query 'imageDetails[0].imageDigest' --output text --region "$AWS_DEFUALT_REGION")
                 - test "$DIGEST" != "None" || { echo "Tag '$ECR_TAG' not found in ECR repo '$ECR_REPO'"; exit 1; }
-                - IMAGE_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$ECR_REPO@$DIGEST"
+                - IMAGE_URI="$ACCOUNT_ID.dkr.ecr.$AWS_DEFUALT_REGION.amazonaws.com/$ECR_REPO@$DIGEST"
                 - echo "Deploying $IMAGE_URI to service=$PROTON_SERVICE instance=$PROTON_INSTANCE"
-                - aws proton get-service --name "$PROTON_SERVICE" --region "$REGION" | jq -r .service.spec > service.yaml
+                - aws proton get-service --name "$PROTON_SERVICE" --region "$AWS_DEFUALT_REGION" | jq -r .service.spec > service.yaml
                 - yq -i '(.spec.instances[] | select(.name == env(PROTON_INSTANCE)) | .spec.image) = env(IMAGE_URI)' service.yaml
                 - aws proton update-service-instance \
                     --deployment-type CURRENT_VERSION \
                     --name "$PROTON_INSTANCE" \
                     --service-name "$PROTON_SERVICE" \
                     --spec file://service.yaml \
-                    --region "$REGION"
-                - aws proton wait service-instance-deployed --name "$PROTON_INSTANCE" --service-name "$PROTON_SERVICE" --region "$REGION"
+                    --region "$AWS_DEFUALT_REGION"
+                - aws proton wait service-instance-deployed --name "$PROTON_INSTANCE" --service-name "$PROTON_SERVICE" --region "$AWS_DEFUALT_REGION"
 
   # EventBridge rule: fire CodeBuild on ANY successful ECR push (any repo/tag)
   EcrPushRule:
