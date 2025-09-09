@@ -1,0 +1,4 @@
+compatible_environments:
+  - loadbalanced-public-svc:1
+supported_component_sources:
+  - DIRECTLY_DEFINED
