@@ -402,7 +402,7 @@ Resources:
           phases:
             install:
               commands:
-                - set -euo pipefail
+                - set -eo pipefail
                 - echo "Installing jq and yq v4..."
                 - yum -y install jq
                 - curl -L https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /usr/local/bin/yq
