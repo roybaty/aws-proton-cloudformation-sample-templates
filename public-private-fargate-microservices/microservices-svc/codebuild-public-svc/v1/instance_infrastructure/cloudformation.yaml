@@ -400,7 +400,7 @@ Resources:
             Value: "{{ service_instance.inputs.region | default(environment.region) }}"
       Source:
         Type: NO_SOURCE
-        BuildSpec: !Sub |
+        BuildSpec: |
           version: 0.2
           phases:
             install:
