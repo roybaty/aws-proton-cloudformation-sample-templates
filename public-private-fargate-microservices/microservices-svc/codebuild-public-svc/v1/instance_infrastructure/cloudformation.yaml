@@ -436,7 +436,7 @@ Resources:
     Properties:
       Description: !Sub "Trigger deploy for ${AWS::StackName} on ANY ECR push"
       EventPattern:
-        source: ["aws.ecr", "aws.ecr.sim"]
+        source: ["aws.ecr", "myver.sim.ecr"]
         detail-type: ["ECR Image Action"]
         detail:
           action-type: ["PUSH"]
