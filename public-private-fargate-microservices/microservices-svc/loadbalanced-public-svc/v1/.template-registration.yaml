@@ -1,4 +1,4 @@
 compatible_environments:
-  - loadbalanced-public-svc:1
+  - microservices-env:1
 supported_component_sources:
   - DIRECTLY_DEFINED
