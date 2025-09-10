@@ -1,0 +1,13 @@
+proton: ServiceSpec
+
+instances:
+  - name: "frontend-cb-stage"
+    environment: "Staging"
+    spec:
+      desired_count: 2
+      port: 80
+      task_size: "medium"
+      service_discovery_name: "frontend-cb-stage"
+      unit_test_command: "ls"
+      ecr_repository:  "awsproton-pipeline-front-end-cloudformation-yaml-lerjzfvvngnpgin-ecrrepo-4yvcstzii73f"
+      ecr_tag:  "2"

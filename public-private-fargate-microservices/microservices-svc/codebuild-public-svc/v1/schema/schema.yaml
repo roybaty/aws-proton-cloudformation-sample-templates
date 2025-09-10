@@ -43,6 +43,8 @@ schema:
         ecr_repository:
           title: "ECR Repository"
           type: string
+          minLength: 1
+          maxLength: 512
           description: "Name of the ECR repo to watch for new images"
         ecr_tag:
           title: "Image Tag"

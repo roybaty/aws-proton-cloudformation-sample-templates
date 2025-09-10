@@ -404,27 +404,27 @@ Resources:
           phases:
             install:
               commands:
-                 - set -eo pipefail
-                 - echo "Installing jq and yq..."
-                 - apt-get update -y
-                 - apt-get install -y jq
-                 - curl -L https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /usr/local/bin/yq
-                 - chmod +x /usr/local/bin/yq
-                 - echo "Shell: $SHELL"; bash --version | head -1
+                - |
+                  set -eo pipefail
+                  apt-get update -y && apt-get install -y jq
+                  curl -L https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /usr/local/bin/yq
+                  chmod +x /usr/local/bin/yq
             build:
               commands:
-                - set -eo pipefail
-                - test -n "$ECR_TAG" || ECR_TAG=latest
-                - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-                - echo "Using repo=$ECR_REPO tag=$ECR_TAG region=$AWS_DEFAULT_REGION"
-                - DIGEST=$(aws ecr describe-images --repository-name "$ECR_REPO" --image-ids imageTag="$ECR_TAG" --query 'imageDetails[0].imageDigest' --output text)
-                - test "$DIGEST" != "None" || { echo "Tag '$ECR_TAG' not found in ECR repo '$ECR_REPO'"; exit 1; }
-                - IMAGE_URI="$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO@$DIGEST"
-                - echo "Deploying $IMAGE_URI to service=$PROTON_SERVICE instance=$PROTON_INSTANCE"
-                - aws proton get-service --name "$PROTON_SERVICE" | jq -r .service.spec > service.yaml
-                - yq -i '(.spec.instances[] | select(.name == env(PROTON_INSTANCE)) | .spec.image) = env(IMAGE_URI)' service.yaml
-                - aws proton update-service-instance --deployment-type CURRENT_VERSION --name "$PROTON_INSTANCE" --service-name "$PROTON_SERVICE" --spec file://service.yaml
-                - aws proton wait service-instance-deployed --name "$PROTON_INSTANCE" --service-name "$PROTON_SERVICE"
+                - |
+                  set -eo pipefail
+                  test -n "$ECR_TAG" || ECR_TAG=latest
+                  ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+                  echo "Using account_id=$ACCOUNT_ID repo=$ECR_REPO tag=$ECR_TAG region=$AWS_DEFAULT_REGION"
+                  DIGEST=$(aws ecr describe-images --repository-name "$ECR_REPO" --image-ids imageTag="$ECR_TAG" --query 'imageDetails[0].imageDigest' --output text)
+                  test "$DIGEST" != "None" || { echo "Tag '$ECR_TAG' not found in ECR repo '$ECR_REPO'"; exit 1; }
+                  IMAGE_URI="$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO@$DIGEST"
+                  echo "Deploying $IMAGE_URI to service=$PROTON_SERVICE instance=$PROTON_INSTANCE"
+                  aws proton get-service --name "$PROTON_SERVICE" | jq -r .service.spec > service.yaml
+                  yq e 'keys' service.yaml
+                  yq -i '(.instances[] | select(.name == env(PROTON_INSTANCE)) | .spec.image) = env(IMAGE_URI)' service.yaml
+                  aws proton update-service-instance --deployment-type CURRENT_VERSION --name "$PROTON_INSTANCE" --service-name "$PROTON_SERVICE" --spec file://service.yaml
+                  aws proton wait service-instance-deployed --name "$PROTON_INSTANCE" --service-name "$PROTON_SERVICE"
   # EventBridge rule: fire CodeBuild on ANY successful ECR push (any repo/tag)
   EcrPushRule:
     Type: AWS::Events::Rule
