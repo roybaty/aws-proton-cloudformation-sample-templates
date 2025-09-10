@@ -450,12 +450,6 @@ Resources:
           - Name: PROTON_INSTANCE
             Type: PLAINTEXT
             Value: "{{ service_instance.name }}"
-          - Name: ECR_REPO
-            Type: PLAINTEXT
-            Value: "{{ service_instance.inputs.ecr_repository | default('') }}"
-          - Name: ECR_TAG
-            Type: PLAINTEXT
-            Value: "{{ service_instance.inputs.ecr_tag | default('latest') }}"
       Source:
         Type: NO_SOURCE
         BuildSpec: |

@@ -40,17 +40,6 @@ schema:
           description: "The name of the service to register in service discovery"
           minLength: 3
           maxLength: 24
-        ecr_repository:
-          title: "ECR Repository"
-          type: string
-          minLength: 1
-          maxLength: 512
-          description: "Name of the ECR repo to watch for new images"
-        ecr_tag:
-          title: "Image Tag"
-          type: string
-          default: "latest"
-          description: "Tag within the repository to deploy"
         region:
           title: "AWS Region"
           type: string
