@@ -94,8 +94,8 @@ Resources:
           SecurityGroups:
             - '{{environment.outputs.ContainerSecurityGroup}}'
           Subnets:
-            - '{{environment.outputs.PublicSubnetOne}}'
-            - '{{environment.outputs.PublicSubnetTwo}}'
+            - '{{environment.outputs.PrivateSubnetOne}}'
+            - '{{environment.outputs.PrivateSubnetTwo}}'
       TaskDefinition: !Ref 'TaskDefinition'
       ServiceRegistries:
       - RegistryArn: !GetAtt DiscoveryService.Arn
@@ -305,10 +305,8 @@ Resources:
       - Key: idle_timeout.timeout_seconds
         Value: '30'
       Subnets:
-        # The load balancer is placed into the public subnets, so that traffic
-        # from the internet can reach the load balancer directly via the internet gateway
-        - '{{environment.outputs.PublicSubnetOne}}'
-        - '{{environment.outputs.PublicSubnetTwo}}'
+        - '{{environment.outputs.PrivateSubnetOne}}'
+        - '{{environment.outputs.PrivateSubnetTwo}}'
       SecurityGroups:
         - !Ref InternalLoadBalancerSG
       Tags:
