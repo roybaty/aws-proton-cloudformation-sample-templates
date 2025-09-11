@@ -373,8 +373,8 @@ Resources:
     Properties:
       Name: !Sub "${AWS::StackName}-vpclink"
       SubnetIds:
-        - '{{ environment.outputs.PublicSubnetOne }}'
-        - '{{ environment.outputs.PublicSubnetTwo }}'
+        - '{{ environment.outputs.PrivateSubnetOne }}'
+        - '{{ environment.outputs.PrivateSubnetTwo }}'
       SecurityGroupIds:
         - !Ref ApiGatewayVpcLinkSG
 
