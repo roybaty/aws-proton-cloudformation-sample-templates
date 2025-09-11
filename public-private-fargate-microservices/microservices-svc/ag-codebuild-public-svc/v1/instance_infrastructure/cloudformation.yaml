@@ -360,7 +360,6 @@ Resources:
 
   # Integration: HTTP proxy to the ALB listener
   HttpApiIntegration:
-    Condition: EnableApiGw
     Type: AWS::ApiGatewayV2::Integration
     Properties:
       ApiId: !Ref HttpApi
@@ -373,7 +372,6 @@ Resources:
 
   # Route: proxy all paths and methods to the integration
   HttpApiProxyRoute:
-    Condition: EnableApiGw
     Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref HttpApi
@@ -382,13 +380,16 @@ Resources:
 
   # Stage: auto-deploy on change
   HttpApiStage:
-    Condition: EnableApiGw
     Type: AWS::ApiGatewayV2::Stage
     Properties:
       ApiId: !Ref HttpApi
       StageName: "{{ environment.name | lower }}"
       AutoDeploy: true
-      # Throttling can be added later via RouteSettings if desired
+      {% if service_instance.inputs.api_enable_throttling | default(false) %}
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: {{ service_instance.inputs.api_throttling_burst }}
+        ThrottlingRateLimit:  {{ service_instance.inputs.api_throttling_rate }}
+      {% endif %}
 
   # Code Build #
   # Role used by CodeBuild to call Proton/ECR/Logs

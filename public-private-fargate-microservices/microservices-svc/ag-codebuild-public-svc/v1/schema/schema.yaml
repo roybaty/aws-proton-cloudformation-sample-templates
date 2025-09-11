@@ -40,6 +40,22 @@ schema:
           description: "The name of the service to register in service discovery"
           minLength: 3
           maxLength: 24
+        api_enable_throttling:
+          title: "Enable API throttling"
+          type: boolean
+          default: false
+        api_throttling_rate:
+          title: "API throttling rate (req/sec)"
+          type: number
+          description: "Steady-state rate limit for API Gateway stage throttling"
+          default: 100
+          minimum: 1
+        api_throttling_burst:
+          title: "API throttling burst"
+          type: number
+          description: "Burst limit for API Gateway stage throttling"
+          default: 200
+          minimum: 1
         region:
           title: "AWS Region"
           type: string
