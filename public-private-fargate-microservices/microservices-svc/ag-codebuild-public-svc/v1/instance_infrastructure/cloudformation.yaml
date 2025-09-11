@@ -369,6 +369,8 @@ Resources:
       ConnectionId: !Ref ApiVpcLink
       IntegrationUri: !Ref PublicLoadBalancerListener   # listener ARN
       PayloadFormatVersion: "1.0"
+      RequestParameters:
+        "overwrite:path": "$request.path"
 
   # Route: proxy all paths and methods to the integration
   HttpApiProxyRoute:
