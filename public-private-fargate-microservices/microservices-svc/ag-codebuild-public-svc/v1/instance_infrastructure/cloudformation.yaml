@@ -310,7 +310,6 @@ Resources:
         - Key: Name
           Value: !FindInMap ['EnvironmentNameConfig', 'Environment', 'Name']
 
-
   # Load Balancer #
   PublicLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -372,21 +371,6 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-alb-internal-sg"
-PublicLoadBalancer:
-  Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-  Properties:
-    Scheme: internal             # <— was: internet-facing
-    LoadBalancerAttributes:
-      - Key: idle_timeout.timeout_seconds
-        Value: '30'
-    Subnets:
-      - '{{ environment.outputs.PublicSubnetOne }}'
-      - '{{ environment.outputs.PublicSubnetTwo }}'
-    SecurityGroups:
-      - !Ref InternalLoadBalancerSG
-    Tags:
-      - Key: Name
-        Value: !FindInMap ['EnvironmentNameConfig', 'Environment', 'Name']
 
   # API Gateway #      
   # API Gateway HTTP API (proxy everything to ALB via VPC Link)
