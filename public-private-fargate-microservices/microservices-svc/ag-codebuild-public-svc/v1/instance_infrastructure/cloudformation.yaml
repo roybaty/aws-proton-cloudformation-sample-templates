@@ -378,6 +378,13 @@ Resources:
       RouteKey: "ANY /{proxy+}"
       Target: !Sub "integrations/${HttpApiIntegration}"
 
+  HttpApiDefaultRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: "$default"
+      Target: !Sub "integrations/${HttpApiIntegration}"
+
   # Stage: auto-deploy on change
   HttpApiStage:
     Type: AWS::ApiGatewayV2::Stage
