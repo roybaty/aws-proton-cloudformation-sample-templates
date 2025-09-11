@@ -363,11 +363,10 @@ Resources:
       GroupDescription: Internal access to the load balancer from API Gateway VPC Link
       VpcId: '{{ environment.outputs.VpcId }}'
       SecurityGroupIngress:
-      # Allow only API GW VPC Link ENIs to reach the ALB (all protocols, or limit to TCP/80)
-      - IpProtocol: tcp
-        FromPort: 80
-        ToPort: 80
-        SourceSecurityGroupId: !Ref ApiGatewayVpcLinkSG
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref ApiGatewayVpcLinkSG
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-alb-internal-sg"
