@@ -341,21 +341,15 @@ Resources:
       Port: 80
       Protocol: HTTP
 
-
   # API Gateway #      
   # API Gateway HTTP API (proxy everything to ALB via VPC Link)
   HttpApi:
-    Condition: EnableApiGw
     Type: AWS::ApiGatewayV2::Api
     Properties:
       Name: !Sub "${AWS::StackName}-httpapi"
       ProtocolType: HTTP
-      # No CORS yet (can add later)
-      # No auth/authorizers yet
 
-  # VPC Link so API Gateway can reach your ALB inside the VPC
   ApiVpcLink:
-    Condition: EnableApiGw
     Type: AWS::ApiGatewayV2::VpcLink
     Properties:
       Name: !Sub "${AWS::StackName}-vpclink"
@@ -536,3 +530,6 @@ Outputs:
   ServiceDiscovery:
     Description: The registered service discovery Service Id
     Value: !Ref DiscoveryService
+  ApiGatewayInvokeUrl:
+    Description: HTTP API base URL (no custom domain yet)
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/{{ environment.name | lower }}/"
