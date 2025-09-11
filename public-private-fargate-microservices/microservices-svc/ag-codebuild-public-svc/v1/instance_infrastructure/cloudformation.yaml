@@ -86,7 +86,7 @@ Resources:
       LaunchType: FARGATE
       DeploymentConfiguration:
         MaximumPercent: 200
-        MinimumHealthyPercent: 75
+        MinimumHealthyPercent: 100
       DesiredCount: '{{service_instance.inputs.desired_count}}'
       NetworkConfiguration:
         AwsvpcConfiguration:
@@ -130,6 +130,9 @@ Resources:
       Protocol: HTTP
       UnhealthyThresholdCount: 2
       VpcId: '{{environment.outputs.VpcId}}'
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: '20'
       Tags:
         - Key: Name
           Value: !FindInMap ['EnvironmentNameConfig', 'Environment', 'Name']
